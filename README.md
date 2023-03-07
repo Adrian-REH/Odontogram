@@ -579,13 +579,469 @@ Rest
 ```
 ### Puesta en marcha
 
+
+
+
+
+
+
+
+
+
+
+
 ## Despues
 Vista
 ```kotlin
+fun Odontogram(
+appointmentID:String,
+viewModelappointment: AppointmentViewModel = hiltViewModel(),
+viewModelfile: UserViewModel = hiltViewModel()
+) {
+    var appointment by remember {
+        mutableStateOf(Appointment("","","","","","","","","",""))
+    }
+    var file by remember {
+        mutableStateOf(Files("","","","","","","",""))
+    }
+    var odontogram by remember {
+        mutableStateOf(app.ibiocd.appointment.model.Odontogram("","","",""))
+    }
+    val appointmentlist by viewModelappointment.appointment.observeAsState(arrayListOf())
+    appointment= appointmentlist.find { appointmentID.contentEquals(it._id) }?: Appointment("","","","","","","","","","")
+
+    val filelist by viewModelfile.files.observeAsState(arrayListOf())
+    file=filelist.find { appointment.files.contentEquals(it._id) }?: Files("","","","","","","","")
+
+    val odontogramlist by viewModelfile.odontogram.observeAsState(arrayListOf())
+    val toothlist by viewModelfile.tooth.observeAsState(arrayListOf())
+
+
+    odontogram=odontogramlist.find { file.odontogram.contentEquals(it._id) }?:Odontogram("","","","")
+
+
+    //BUSCO EL TURNO Y BUSCO EL FILE Y BUSCO EL ODONTOGRAMA
+    //BUSCO SI EXISTE UN ODONTOGRAMA PARA EL PACIENTE Y MEDICO, SI EXISTE ENTONCES PASO MOSTRAR LOS DATOS
+    //EN CASO DE NO EXISTIR LO CREO
+    // EL BOTON DE CREAR, ES DISTINTO QUE EL DE EDITAR POR TANT O SE BLOQUEA DEPENDIENDO SI EXISTE O NO
+
+    var list= arrayListOf<Tooth>()
+
+
+    var numbertooth by rememberSaveable{ mutableStateOf("") }
+    var Bot by rememberSaveable { mutableStateOf(true) }
+    var Top by rememberSaveable { mutableStateOf(false) }
+
+    var SelectToothBot by rememberSaveable{ mutableStateOf("") }
+    var SelectToothTop by rememberSaveable{ mutableStateOf("") }
+    val listError= ArrayList<String>() //LISTA DE ERRORES DEL DIENTE DE ARRIBA
+
+    for (i in 0 until 12){
+        listError.add("https://cdn-icons-png.flaticon.com/512/91/91160.png")
+    }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(30.dp)){
+            dropDownTooth(list, onSelected = { select->
+
+
+                numbertooth=select
+                SelectToothBot= toothlist.find { it.number.contentEquals(numbertooth) }?.imgBot ?: ""
+                SelectToothTop= toothlist.find { it.number.contentEquals(numbertooth) }?.imgTop ?: ""
+
+            })
+
+
+        LazyRow(modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally))
+        {
+            if (Top){
+                item(){
+
+                    Card(
+                        shape = RoundedCornerShape(60.dp),
+                        elevation = 20.dp,
+                        modifier = Modifier
+                            .height(280.dp)
+                            .width(120.dp)
+                            .padding(20.dp)
+                            .clickable {
+                                Top = !Top
+
+                            }
+                    ) {
+                        Image(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            painter = rememberImagePainter(
+                                data = SelectToothTop,
+                                builder = {
+                                    placeholder(R.drawable.placeholder)
+                                    error(R.drawable.placeholder)
+                                }
+                            ),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillHeight
+                        )
+
+
+                    }
+                }
+            }else{
+
+                val itemCount = listError.size
+
+                //ITEMs DE LISTA DE ERROR
+                items(count = itemCount){ index ->
+                    Card(
+                        shape = RoundedCornerShape(60.dp),
+                        elevation = 20.dp,
+                        modifier = Modifier
+                            .height(280.dp)
+                            .width(120.dp)
+                            .padding(20.dp)
+                            .clickable {
+
+
+                                Top = !Top
+                                SelectToothTop = listError[index]
+                                toothlist.filter { it.number == numbertooth }.forEach { it.imgTop = SelectToothTop}
+
+                            }
+
+                    ) {
+
+
+                    }
+                }
+            }
+        }
+
+        BlockSpace()
+        LazyRow(modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentWidth(Alignment.CenterHorizontally) )
+        {
+            if (Bot){
+                item(){
+                    Card(
+                        shape = RoundedCornerShape(60.dp),
+                        elevation = 20.dp,
+                        modifier = Modifier
+                            .height(130.dp)
+                            .width(130.dp)
+                            .padding(20.dp)
+                            .clickable {
+                                Bot = !Bot
+                            }
+                    ) {
+                        Image(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            painter = rememberImagePainter(
+                                data = SelectToothBot,
+                                builder = {
+                                    placeholder(R.drawable.placeholder)
+                                    error(R.drawable.placeholder)
+                                }
+                            ),
+                            contentDescription = null,
+                            contentScale = ContentScale.FillHeight
+                        )
+
+
+                    }
+                }
+            }else{
+                //ITEMs DE LISTA DE ERROR
+                val itemCount2 = listError.size
+
+                items(count = itemCount2){ index ->
+                    Card(
+                        shape = RoundedCornerShape(60.dp),
+                        elevation = 20.dp,
+                        modifier = Modifier
+                            .height(130.dp)
+                            .width(130.dp)
+                            .padding(20.dp)
+                            .clickable {
+                                Bot = !Bot
+
+                                SelectToothBot = listError[index]
+                                toothlist.filter { it.number == numbertooth }.forEach { it.imgBot = SelectToothBot}
+
+                            }
+                    ) {
+
+
+                    }
+                }
+            }
+        }
+
+
+
+        Button(onClick = {
+            if (file.odontogram==""){
+                val listt= ArrayList<Tooths>()
+                for (i in 0 until 32){
+                    listt.add(
+                        Tooths(i.toString(),
+                        "https://appointmentibiocd.azurewebsites.net/Dientes/superior/sup${i}.png",
+                            "https://appointmentibiocd.azurewebsites.net/Dientes/inferior/inf${i}.png"))
+                }
+
+                viewModelfile.addOdontogram(ApiTooth(listt),appointment.patient,appointment.medical)
+
+            }else{
+
+                viewModelfile.updateontogram(OdontogramResponse(odontogram._id,toothlist,odontogram.patient,odontogram.medical))
+
+            }
+
+
+        },modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .padding(horizontal = 30.dp),
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color.White),
+            shape = RoundedCornerShape(30),
+            elevation = ButtonDefaults.elevation(
+                defaultElevation = 10.dp,
+                pressedElevation = 8.dp,
+                disabledElevation = 0.dp
+            )
+        ) {
+
+            if (file.odontogram!=""){
+
+                // if(state.value?.isLoading==true || isLoading) CircularProgressIndicator( modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                //else Text("Update")
+                Text("Update")
+            }else{
+
+                // if(state.value?.isLoading==true || isLoading) CircularProgressIndicator( modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                //else Text("Create")
+                Text("Create")
+            }
+        }
+
+
+    }
+}
+
+@Composable
+fun dropDownTooth(list: List<Tooth>, onSelected:(String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf("")}
+    var textFiledSize by remember { mutableStateOf(Size.Zero)}
+
+    val icon= if(expanded){
+        painterResource(id = R.drawable.ic_keyboard_arrow_up)
+    }else{
+        painterResource(id = R.drawable.ic_keyboard_arrow_down)
+
+    }
+    Column() {
+        OutlinedTextField(
+            value = selectedItem,
+            onValueChange = { selectedItem = it },
+            label = { Text("Numero de diente") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { layoutCoordinates ->
+                    textFiledSize = layoutCoordinates.size.toSize()
+                },
+            trailingIcon = {
+                Icon( icon, contentDescription ="ToothList" , modifier = Modifier
+                    .size(25.dp)
+                    .clickable { expanded = !expanded }, tint = Color.Gray)
+            }
+        )
+
+        DropdownMenu(
+            expanded=expanded,
+            onDismissRequest = {expanded=false},
+            modifier = Modifier.width(with(LocalDensity.current){textFiledSize.width.toDp()})
+
+        ){
+            list.forEach { label ->
+                DropdownMenuItem(onClick = {
+                    selectedItem=label.number
+                    onSelected(label.number)
+                    expanded=false }) {
+                    Text(text = label.number)
+                }
+            }
+        }
+    }
+}
+
 ```
 Funciones
+ViewModel
 ```kotlin
+     fun addOdontogram(data:ApiTooth, patient:String, medical:String) {
+
+         if (_isLoading.value == false)
+            viewModelScope.launch(Dispatchers.IO) {
+                _isLoading.postValue(true)
+                odontogramRepository.postOdontogram(data,patient,medical)
+                _isLoading.postValue(false)
+                Log.d("uploadOdontogram","Successful")
+            }
+    }
+
+     fun loadOdontogram() {
+
+         if (_isLoading.value == false)
+            viewModelScope.launch(Dispatchers.IO) {
+                _isLoading.postValue(true)
+                odontogramRepository.getOdontogram()
+                _isLoading.postValue(false)
+                Log.d("loadOdontogram","Successful")
+            }
+    }
+     fun deleteOdontogram() {
+
+         if (_isLoading.value == false)
+            viewModelScope.launch(Dispatchers.IO) {
+                _isLoading.postValue(true)
+                odontogramRepository.deleteAllOdontogram()
+                _isLoading.postValue(false)
+                Log.d("loadOdontogram","Successful")
+            }
+    }
+
+     fun updateontogram(odontogram: OdontogramResponse) {
+
+         if (_isLoading.value == false)
+            viewModelScope.launch(Dispatchers.IO) {
+                _isLoading.postValue(true)
+                odontogramRepository.putOdontogram(odontogram)
+                _isLoading.postValue(false)
+                Log.d("uploadOdontogram","Successful")
+            }
+    }
+
+
+
+
+
 ```
+Repository
+```kotlin
+interface OdontogramRepository {
+
+
+    //PATIENT
+    suspend fun putOdontogram(odontogram:OdontogramResponse): String
+    suspend fun postOdontogram(data:ApiTooth,patient:String,medical:String): String
+    suspend fun deleteOdontogram(toDelete: Odontogram)
+    suspend fun deleteAllOdontogram()
+    suspend fun getOdontogram()
+    fun getAllOdontogram(): LiveData<List<Odontogram>>
+    fun getAllTooth(): LiveData<List<Tooth>>
+
+
+}
+
+class OdontogramRepositoryImp @Inject constructor(
+    private val dataSource: RestDataSource,
+    private val odontogramDao: OdontogramDao
+
+) : OdontogramRepository {
+
+    override fun getAllOdontogram() = odontogramDao.getAllOdontogram()
+    override fun getAllTooth() = odontogramDao.getAllTooth()
+    override suspend fun putOdontogram(odontogram:OdontogramResponse): String {
+        delay(3000)
+        //DESCARGO LOS DATOS
+        var  ID= ""
+
+        val call = dataSource.putOdontogram(odontogram._id,odontogram.data.toString(),odontogram.patient,odontogram.medical)
+        call.enqueue(object : Callback<UpdateResponse> {
+            override fun onFailure(call: Call<UpdateResponse>, t: Throwable) {
+
+                Log.d("puPatient -> ERROR", t.message.toString())
+
+            }
+            override fun onResponse(call: Call<UpdateResponse>, response: retrofit2.Response<UpdateResponse>) {
+
+                Log.d("puPatient -> SUCCESSFULLY", response.body()?.acknowledged.toString())
+
+            }
+        })
+
+        return ID
+    }
+    override suspend fun postOdontogram(data:ApiTooth,patient:String,medical:String): String {
+        delay(3000)
+
+        var arr= listOf<String>("ddca","2dsa","asd")
+        //DESCARGO LOS DATOS
+
+
+        Log.d("ARRAYDATA",data.data.toString())
+        val call = dataSource.postOdontogram(RestDataSource.Toothsss(data.data,"",""))
+        call.enqueue(object : Callback<RestDataSource.Toothsss> {
+            override fun onFailure(call: Call<RestDataSource.Toothsss>, t: Throwable) {
+                Log.d("ERROR",t.message.toString())
+
+            }
+            override fun onResponse(call: Call<RestDataSource.Toothsss>, response: retrofit2.Response<RestDataSource.Toothsss>) {
+                //Log.d("Successful",response.body()?._id.toString())
+
+            }
+        })
+
+        return ""
+    }
+    override suspend fun getOdontogram(){
+
+        delay(3000)
+        val listOdontogram= ArrayList<Odontogram>()
+        val listTooth= ArrayList<Tooth>()
+        for (i in 0 until dataSource.getOdontogram().result.size) {
+            val _id =dataSource.getOdontogram().result[i]._id
+            val data =dataSource.getOdontogram().result[i].data
+
+           for (j in 0 until dataSource.getOdontogram().result[i].data.size) {
+                val _id2 =dataSource.getOdontogram().result[i].data[j]._id
+                val databot =dataSource.getOdontogram().result[i].data[j].imgBot
+                val datatop =dataSource.getOdontogram().result[i].data[j].imgTop
+                val datanum =dataSource.getOdontogram().result[i].data[j].number
+                val tooth = Tooth(_id2,datanum,datatop, databot )//ESTRUCTURA DE DATOS PARA ROOM
+                odontogramDao.insert(tooth)
+               listTooth.add(tooth)
+
+           }
+
+            val patient =dataSource.getOdontogram().result[i].patient
+            val medical =dataSource.getOdontogram().result[i].medical
+            val odontogram = Odontogram(_id,"", patient, medical )//ESTRUCTURA DE DATOS PARA ROOM
+            odontogramDao.insert(odontogram)
+            listOdontogram.add(odontogram)
+        }
+        Log.d("getOdontogram","${listOdontogram.size} & ${listTooth.size}")
+
+
+    }
+    override suspend fun deleteOdontogram(toDelete: Odontogram) = odontogramDao.delete(toDelete)
+    override suspend fun deleteAllOdontogram() {
+        odontogramDao.deleteAllOdontogram()
+        odontogramDao.deleteAllTooth()
+        Log.d("deleteAllOdontogram","Successful")
+    }
+
+}
+
+```
+
 Rest
 ```kotlin
 
