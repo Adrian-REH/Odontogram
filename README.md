@@ -3,6 +3,9 @@ Un antes y despues del uso de Kotlin con XML a usar Kotlin con Jetpack Compose y
 
 
 ## Antes
+
+En la vista el diseño esta realizado en XML, y las funciones estan en Kotlin, dedicando 3 funciones de peticion al servidor GET, UPDATE y CREATE no vi necesario usar el DELETE asi que lo omiti.
+Aparte agrege 2 funciones que se activan al seleccionar un Card(diente superior o inferior) lo que hace es enlistar los errores y visualizarla en RecyclerView y y una ultima funcion en caso de seleccionar un Error de la lista de errores. Todo parecer ser muy sencillo pero le falta el uso de ViewModel, se me complicaba Testearlo y en vez de usar List<> o ArrayList<> para las peticiones al server directamente transformaba a JSON con Strings. La verdad que se me complicaba mejorarlo por eso pase de esto a...
 Vista
 ```kotlin
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -579,16 +582,7 @@ Rest
 ```
 ### Puesta en marcha
 
-
-
-
-
-
-
-
-
-
-
+ Esto, aqui hice esto: Agrege **_Jetpack Compose_** para el diseño visual y para hacerlo interactivo utilize remmember para las variables, use List<> y ArrayList<> Para las peticiones en Retrofit reemplazando **_@Body_** por @Field en la peticion POST, y use ViewModel y Repository para mejorar el Testing con Hilt. Las funciones son las mismas GET, POST y UPDATE para Retrofit y la parte visual interactiva se actualiza con rememberSaveable se reduje un poco el dolor de cabeza a la hora de hacerle mejoras y aumente la velocidad de comprender el anterior desorden jajaja.
 
 ## Despues
 Vista
@@ -1067,5 +1061,9 @@ Rest
 
 ```
 ### Puesta en marcha
+
+
+## Conclusiones
+Para ser sincero, el diseño principal no estaba mal si agrego List<> en las peticiones al Srv y viewModel con Hilt para las funciones, puedo mejorar el anterior codigo para hacerlo mas escalable.
 
 
