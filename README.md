@@ -586,10 +586,12 @@ Rest
 ## Despues
 Vista
 ```kotlin
+@Composable
 fun Odontogram(
 appointmentID:String,
 viewModelappointment: AppointmentViewModel = hiltViewModel(),
-viewModelfile: UserViewModel = hiltViewModel()
+viewModelUser: UserViewModel = hiltViewModel(),
+viewModel: OdontogramViewModel = hiltViewModel()
 ) {
     var appointment by remember {
         mutableStateOf(Appointment("","","","","","","","","",""))
@@ -597,33 +599,46 @@ viewModelfile: UserViewModel = hiltViewModel()
     var file by remember {
         mutableStateOf(Files("","","","","","","",""))
     }
-    var odontogram by remember {
-        mutableStateOf(app.ibiocd.appointment.model.Odontogram("","","",""))
+
+    var odontograma by remember {
+        mutableStateOf(Odontogram("","","",""))
     }
+    val idodontogramstate =viewModel.odontogramState.collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
+    val context= LocalContext.current
+    val isLoading by viewModelUser.isLoading.observeAsState(false)
+
     val appointmentlist by viewModelappointment.appointment.observeAsState(arrayListOf())
     appointment= appointmentlist.find { appointmentID.contentEquals(it._id) }?: Appointment("","","","","","","","","","")
 
-    val filelist by viewModelfile.files.observeAsState(arrayListOf())
+    val filelist by viewModelUser.files.observeAsState(arrayListOf())
     file=filelist.find { appointment.files.contentEquals(it._id) }?: Files("","","","","","","","")
 
-    val odontogramlist by viewModelfile.odontogram.observeAsState(arrayListOf())
-    val toothlist by viewModelfile.tooth.observeAsState(arrayListOf())
+    val odontogramlist by viewModel.odontogram.observeAsState(arrayListOf())
+    val toothlist by viewModel.tooth.observeAsState(arrayListOf())
+
+    odontograma= odontogramlist.find { it._id.contentEquals(file.odontogram) }?:Odontogram("","","","")
+    var list= arrayListOf<Tooths>()
+
+    if (odontograma.data!=""){
+        for (i in 0 until toothlist.size){
+            list.add(Tooths(toothlist[i].number,toothlist[i].imgTop,toothlist[i].imgBot))
+        }
 
 
-    odontogram=odontogramlist.find { file.odontogram.contentEquals(it._id) }?:Odontogram("","","","")
-
-
-    //BUSCO EL TURNO Y BUSCO EL FILE Y BUSCO EL ODONTOGRAMA
-    //BUSCO SI EXISTE UN ODONTOGRAMA PARA EL PACIENTE Y MEDICO, SI EXISTE ENTONCES PASO MOSTRAR LOS DATOS
-    //EN CASO DE NO EXISTIR LO CREO
-    // EL BOTON DE CREAR, ES DISTINTO QUE EL DE EDITAR POR TANT O SE BLOQUEA DEPENDIENDO SI EXISTE O NO
-
-    var list= arrayListOf<Tooth>()
+    }else{
+        for (i in 0 until 32){
+            list.add(
+                Tooths(i.toString(),
+                    "https://appointmentibiocd.azurewebsites.net/Dientes/superior/sup${i}.png",
+                    "https://appointmentibiocd.azurewebsites.net/Dientes/inferior/inf${i}.png"))
+        }
+    }
 
 
     var numbertooth by rememberSaveable{ mutableStateOf("") }
     var Bot by rememberSaveable { mutableStateOf(true) }
-    var Top by rememberSaveable { mutableStateOf(false) }
+    var Top by rememberSaveable { mutableStateOf(true) }
 
     var SelectToothBot by rememberSaveable{ mutableStateOf("") }
     var SelectToothTop by rememberSaveable{ mutableStateOf("") }
@@ -640,8 +655,8 @@ viewModelfile: UserViewModel = hiltViewModel()
 
 
                 numbertooth=select
-                SelectToothBot= toothlist.find { it.number.contentEquals(numbertooth) }?.imgBot ?: ""
-                SelectToothTop= toothlist.find { it.number.contentEquals(numbertooth) }?.imgTop ?: ""
+                SelectToothBot= list.find { it.number.contentEquals(numbertooth) }?.imgBot ?: ""
+                SelectToothTop= list.find { it.number.contentEquals(numbertooth) }?.imgTop ?: ""
 
             })
 
@@ -780,19 +795,12 @@ viewModelfile: UserViewModel = hiltViewModel()
 
         Button(onClick = {
             if (file.odontogram==""){
-                val listt= ArrayList<Tooths>()
-                for (i in 0 until 32){
-                    listt.add(
-                        Tooths(i.toString(),
-                        "https://appointmentibiocd.azurewebsites.net/Dientes/superior/sup${i}.png",
-                            "https://appointmentibiocd.azurewebsites.net/Dientes/inferior/inf${i}.png"))
-                }
 
-                viewModelfile.addOdontogram(ApiTooth(listt),appointment.patient,appointment.medical)
+                viewModel.addOdontogram(ApiTooth(list),appointment.patient,appointment.medical)
 
             }else{
 
-                viewModelfile.updateontogram(OdontogramResponse(odontogram._id,toothlist,odontogram.patient,odontogram.medical))
+                viewModel.updateontogram(odontograma._id,ApiTooth(list),appointment.patient,appointment.medical)
 
             }
 
@@ -812,23 +820,47 @@ viewModelfile: UserViewModel = hiltViewModel()
 
             if (file.odontogram!=""){
 
-                // if(state.value?.isLoading==true || isLoading) CircularProgressIndicator( modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                //else Text("Update")
-                Text("Update")
+                 if(idodontogramstate.value?.isLoading==true || isLoading) CircularProgressIndicator( modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                else Text("Update")
             }else{
 
-                // if(state.value?.isLoading==true || isLoading) CircularProgressIndicator( modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                //else Text("Create")
-                Text("Create")
+                 if(idodontogramstate.value?.isLoading==true || isLoading) CircularProgressIndicator( modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                else Text("Create")
             }
         }
 
 
     }
+
+    LaunchedEffect(key1 = idodontogramstate.value?.isSuccess ){
+        scope.launch {
+            if (idodontogramstate.value?.isSuccess?._id !=""){
+                val success = idodontogramstate.value?.isSuccess
+
+                file.odontogram=success?._id.toString()
+                Log.d("SUCCESS",file.toString() + success?._id.toString())
+
+                viewModelUser.uploadFile(Files(file._id,file.laboratory,file.prescriptions,file.stadies,success?._id.toString(),file.form,file.patient,file.medical))
+
+
+
+            }
+        }
+    }
+
+    LaunchedEffect(key1 = idodontogramstate.value?.isError ){
+        scope.launch {
+            if (idodontogramstate.value?.isError?.isNotEmpty()==true){
+                val success = idodontogramstate.value?.isError
+                Log.d("ERROR",success.toString())
+                Toast.makeText(context,"Error: Intenta mas tarde", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 }
 
 @Composable
-fun dropDownTooth(list: List<Tooth>, onSelected:(String) -> Unit) {
+fun dropDownTooth(list: List<Tooths>, onSelected:(String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf("")}
     var textFiledSize by remember { mutableStateOf(Size.Zero)}
@@ -872,7 +904,10 @@ fun dropDownTooth(list: List<Tooth>, onSelected:(String) -> Unit) {
             }
         }
     }
+
+
 }
+
 
 ```
 Funciones
